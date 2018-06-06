@@ -60,6 +60,7 @@ const app = ( (ta) => {
     ta.reduceByWord();
     let sortedWordFrequencies = ta.sortWordFreq();
     let outputList = document.querySelector('#output');
+    outputList.innerHTML = '';
     for (let i = 0; i < 20; i++) {
       let word = sortedWordFrequencies[i];
       let li = document.createElement('li');
