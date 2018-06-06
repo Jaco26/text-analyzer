@@ -6,7 +6,7 @@ const ta = (() => {
     sortedWordFreq: [],
   }
 
-  const wordRe = /\b[a-z-\d]+\b/gi;
+  const wordRe = /\b[a-z'-\d]+\b/gi;
 
   // Private methods
   const setText = (text) => {
