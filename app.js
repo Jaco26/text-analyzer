@@ -1,74 +1,103 @@
-const ta = (() => {
-  // Data
-  const data = {
-    text: '',
-    wordFreq: {},
-    sortedWordFreq: [],
-  }
+const tac = (() => {
 
-  const wordRe = /\b[a-z'-\d]+\b/gi;
-
-  // Private methods
-  const setText = (text) => {
-    data.text = text;
-  }
-
-  const setReducedByWord = () => {
-    if (!data.text) {
-      return 'There\'s nothing to analyze. Please add some text.';
+  class WordCounter {
+    constructor () {
+      this._text = '';
+      this._wordsToIgnore = [];
+      this._wordRe = /\b[a-z'-\d]+\b/gi;
     }
-    data.wordFreq = data.text.match(wordRe)
-      .reduce((a, b) => {
-        b = b.toLowerCase();
+
+    set text (val) {
+      this._text = val;
+    }
+
+    set wordsToIgnore (val) {
+      this._wordsToIgnore = val;      
+    }
+
+    get text () {
+      return this._text;
+    }
+
+    get wordsToIgnore () {
+      return this._wordsToIgnore;
+    }
+
+    get wordRe () {
+      return this._wordRe
+    };
+
+    filterWordsToIgnore (ignoreCasing) {
+      let words = this.text.match(this.wordRe);
+      return words.filter(word =>  this.wordsToIgnore.indexOf(word.toLowerCase()) == -1);
+    }
+
+    countWordFrequency (ignoreCasing) {      
+      let words = this.filterWordsToIgnore(ignoreCasing);
+      // return this.text.match(this.wordRe)
+      return words .reduce( (a, b) => {
+        ignoreCasing ? b = b.toLowerCase() : b;
         a[b] ? a[b] += 1 : a[b] = 1;
         return a;
-      }, {});
-    return data.wordFreq;
+      }, {}); 
+    }
+    sortWordsByUsage (ignoreCasing) {
+      const entries = Object.entries(this.countWordFrequency(ignoreCasing));      
+      return entries.sort( (a, b) => {
+        return b[1] - a[1];
+      });
+    }
   }
 
-  const setSortedWordFreq = () => {
-    let entries = Object.entries(data.wordFreq);
-    return entries.sort((a, b) => {
-      return b[1] - a[1];
-    });
-  }
-
-  const getText = () => data.text;
-  const getWordFreq = () => data.wordFreq;
-  const getSortedWordFreq = () => data.sortedWordFreq;
+  // Private class instance
+  const wordCounterInstance = new WordCounter();
 
   // Public methods
-  const addText = (text) => setText(text);
-  const fetchText = () => getText();
-  const reduceByWord = () => setReducedByWord();
-  const sortWordFreq = () => setSortedWordFreq();
-  
+  const addText = (text, wordsToIgnore) => {
+    wordCounterInstance.text = text;
+    wordCounterInstance.wordsToIgnore = wordsToIgnore.map(word => word.toLowerCase());
+  }
+  const getText = () => wordCounterInstance.text;
+  const getWordFreqWithCasing = (ignoreCasing) => wordCounterInstance.sortWordsByUsage(ignoreCasing);
+
   return {
     addText,
-    fetchText,
-    reduceByWord,
-    sortWordFreq
+    getText,
+    getWordFreqWithCasing,
   }
 })();
 
+
+
 const app = ( (ta) => {
-  document.querySelector('#text-in-form').addEventListener('submit', (e) => {
-    e.preventDefault();
+
+  const ignoreTheseWords = ['a', 'is', 'of', 'the', 'make', 'and', 'it', 'that', 'who',
+    'in', 'but', 'to', 'for', 'be', 'but', 'are', 'has', 'was', 'will', 'could', 'have',
+    'than', 'this', 'they', 'with', 'through', 'by', 'were', 'get'];
+
+  // Event listeners
+  document.querySelector('#text-in-form').addEventListener('submit', handleSubmitForm); 
+    
+  // Event handlers
+  function handleSubmitForm (event) {
+    event.preventDefault();    
     let text = document.querySelector('#text-in').value;
-    ta.addText(text);
-    ta.fetchText();
-    ta.reduceByWord();
-    let sortedWordFrequencies = ta.sortWordFreq();
+    ta.addText(text, ignoreTheseWords);
+    const sortedWords = ta.getWordFreqWithCasing(true);    
+    displaySortedWords(sortedWords);
+  }
+
+  function displaySortedWords (sortedWords) {
     let outputList = document.querySelector('#output');
     outputList.innerHTML = '';
     for (let i = 0; i < 20; i++) {
-      let word = sortedWordFrequencies[i];
+      let word = sortedWords[i];
       let li = document.createElement('li');
       li.textContent = `${word[0]}: ${word[1]}`;
       outputList.appendChild(li)
     }
-   
-  });
+  }
 
-})(ta);
+
+})(tac);
 
