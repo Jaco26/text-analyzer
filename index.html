@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Text Analyzer</title>
+  <link rel="stylesheet" href="bootstrap.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container-fluid" id="app">
+    <div class="row">
+      <div class="col-xs-12 col-sm-10 offset-sm-1 col-lg-8 offset-lg-2">
+        <h1>Analyze This</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12 col-sm-10 offset-sm-1 col-lg-8 offset-lg-2">
+        <form id="text-in-form">
+          <div class="form-group">
+            <textarea 
+              class="form-control" 
+              id="text-in" 
+              cols="30"
+              rows="5" 
+              placeholder="Enter some text to get a count of the number of times each of the top 20 most used words were used."
+            ></textarea>
+            <button type="submit" class="mt-1 btn btn-light btn-block">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="row ">
+      <div class="text-center col-xs-12 col-sm-10 offset-sm-1 col-lg-8 offset-lg-2">
+        <h3>20 Most Frequently Used Words:</h3>
+        <ul id="output">
+        
+        </ul>
+      </div>
+     
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>
