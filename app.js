@@ -1,18 +1,20 @@
-const tac = (() => {
 
-  class WordCounter {
-    constructor () {
+const textController = ( () => {
+  // Define private TextAnalyzer class
+  class TextAnalyzer {
+    constructor(){
       this._text = '';
       this._wordsToIgnore = [];
-      this._wordRe = /\b[a-z'-\d]+\b/gi;
+      this.wordReI = /\b[a-z'-\d]+\b/gi;
+      this.wordReC = /\b[a-z'-\d]+\b/g;
     }
 
-    set text (val) {
-      this._text = val;
+    set text(text) {
+      this._text = text;
     }
 
-    set wordsToIgnore (val) {
-      this._wordsToIgnore = val;      
+    set wordsToIgnore(words){
+      this._wordsToIgnore = words;
     }
 
     get text () {
@@ -22,82 +24,114 @@ const tac = (() => {
     get wordsToIgnore () {
       return this._wordsToIgnore;
     }
-
-    get wordRe () {
-      return this._wordRe
-    };
-
-    filterWordsToIgnore (ignoreCasing) {
-      let words = this.text.match(this.wordRe);
-      return words.filter(word =>  this.wordsToIgnore.indexOf(word.toLowerCase()) == -1);
+    
+    filterWordsToIgnore(ignoreCasing) {
+      return ignoreCasing 
+        ? this.text.split(' ').filter(word => !this.wordsToIgnore.includes(word.toLowerCase())) 
+        : this.text.split(' ').filter(word => !this.wordsToIgnore.includes(word));
     }
 
-    countWordFrequency (ignoreCasing) {      
-      let words = this.filterWordsToIgnore(ignoreCasing);
-      // return this.text.match(this.wordRe)
-      return words .reduce( (a, b) => {
+    countWordFrequency(ignoreCasing) {
+      const words = this.filterWordsToIgnore(ignoreCasing);
+      return words.reduce( (a, b) => {
         ignoreCasing ? b = b.toLowerCase() : b;
         a[b] ? a[b] += 1 : a[b] = 1;
         return a;
-      }, {}); 
+      }, {});
     }
-    sortWordsByUsage (ignoreCasing) {
-      const entries = Object.entries(this.countWordFrequency(ignoreCasing));      
+
+    sortWordsByUsage (desc, ignoreCasing) {
+      const entries = Object.entries(this.countWordFrequency(ignoreCasing));
       return entries.sort( (a, b) => {
-        return b[1] - a[1];
+        return desc ? b[1] - a[1] : a[1] - b[1];
       });
     }
   }
 
   // Private class instance
-  const wordCounterInstance = new WordCounter();
+  const ta = new TextAnalyzer();
 
   // Public methods
-  const addText = (text, wordsToIgnore) => {
-    wordCounterInstance.text = text;
-    wordCounterInstance.wordsToIgnore = wordsToIgnore.map(word => word.toLowerCase());
+  const setText = (text) => ta.text = text;
+  const getText = () => ta.text;
+  const setWordsToIgnore = (words) => ta.wordsToIgnore = words;
+  const getWordsToIgnore = () => ta.wordsToIgnore;
+  const sortWords = (desc, ignoreCasing) => ta.sortWordsByUsage(desc, ignoreCasing)
+
+  class App {
+    constructor({ elems, data, handlers }) {
+      this.elems = this.setElements(elems);
+      this.data = data;
+      this.handlers = handlers;
+    }
+
+    setElements(elements) {
+      let entries = Object.entries(elements);
+      return entries.reduce( (a, b) => {
+        a[b[0]] = document.querySelector(b[1]);
+          return a 
+      }, {});
+    }
   }
-  const getText = () => wordCounterInstance.text;
-  const getWordFreqWithCasing = (ignoreCasing) => wordCounterInstance.sortWordsByUsage(ignoreCasing);
 
   return {
-    addText,
+    setText,
     getText,
-    getWordFreqWithCasing,
-  }
+    setWordsToIgnore,
+    getWordsToIgnore,
+    sortWords,
+    App
+  };
+
 })();
 
 
 
-const app = ( (ta) => {
+const appController = ( (tc) => { 
 
-  const ignoreTheseWords = ['a', 'is', 'of', 'the', 'make', 'and', 'it', 'that', 'who',
-    'in', 'but', 'to', 'for', 'be', 'but', 'are', 'has', 'was', 'will', 'could', 'have',
-    'than', 'this', 'they', 'with', 'through', 'by', 'were', 'get'];
-
-  // Event listeners
-  document.querySelector('#text-in-form').addEventListener('submit', handleSubmitForm); 
-    
-  // Event handlers
-  function handleSubmitForm (event) {
-    event.preventDefault();    
-    let text = document.querySelector('#text-in').value;
-    ta.addText(text, ignoreTheseWords);
-    const sortedWords = ta.getWordFreqWithCasing(true);    
-    displaySortedWords(sortedWords);
-  }
-
-  function displaySortedWords (sortedWords) {
-    let outputList = document.querySelector('#output');
-    outputList.innerHTML = '';
-    for (let i = 0; i < 20; i++) {
-      let word = sortedWords[i];
-      let li = document.createElement('li');
-      li.textContent = `${word[0]}: ${word[1]}`;
-      outputList.appendChild(li)
+  const app = new tc.App({
+    elems: {
+      form: '#text-in-form',
+      resultOrder: '#result-order',
+      textIn: '#text-in',
+      outputList: '#output'
+    },
+    data: {
+      wordsToIgnore: ['a', 'is', 'of', 'the', 'make', 'and', 'it', 'that', 'who',
+        'in', 'but', 'to', 'for', 'be', 'but', 'are', 'has', 'was', 'will', 'could', 'have',
+        'than', 'this', 'they', 'with', 'through', 'by', 'were', 'get'],
+    },
+    handlers: {
+      handleFormSubmit(event){
+        event.preventDefault();
+        let text = app.elems.textIn.value;
+        tc.setText(text);
+        tc.setWordsToIgnore(app.data.wordsToIgnore);
+        let desc = app.elems.resultOrder.checked;
+        let sortedWords = tc.sortWords(desc, false);
+        app.handlers.displaySortedWords(sortedWords);
+      },
+      displaySortedWords(sortedWords){
+        app.elems.outputList.innerHTML = '';
+        sortedWords.forEach(word => {
+          item = document.createElement('li');
+          item.textContent = `${word[0]}: ${word[1]}`;
+          app.elems.outputList.appendChild(item)
+        });
+      }
     }
-  }
+  });
+
+  console.log(app);
+
+  // listeners
+  app.elems.form.addEventListener('submit', app.handlers.handleFormSubmit);
 
 
-})(tac);
+
+
+
+
+
+})(textController);
 
