@@ -20,3 +20,8 @@ h1, h2, h3 {
   list-style: none;
   padding: 0;
 }
+
+.header {
+  display: block;
+  background-color: #a7b8bd;
+}

@@ -56,7 +56,11 @@ const textController = ( () => {
   const getText = () => ta.text;
   const setWordsToIgnore = (words) => ta.wordsToIgnore = words;
   const getWordsToIgnore = () => ta.wordsToIgnore;
-  const sortWords = (desc, ignoreCasing) => ta.sortWordsByUsage(desc, ignoreCasing)
+  const sortWords = (desc, ignoreCasing) => ta.sortWordsByUsage(desc, ignoreCasing);
+
+  const doTheThing = (text, orderBy, casing) => {
+
+  }
 
   class App {
     constructor({ elems, data, handlers }) {
@@ -93,6 +97,8 @@ const appController = ( (tc) => {
     elems: {
       form: '#text-in-form',
       resultOrder: '#result-order',
+      resultNum: '#number-of-results',
+      ignoreCasing: '#ignore-casing',
       textIn: '#text-in',
       outputList: '#output'
     },
@@ -107,13 +113,17 @@ const appController = ( (tc) => {
         let text = app.elems.textIn.value;
         tc.setText(text);
         tc.setWordsToIgnore(app.data.wordsToIgnore);
-        let desc = app.elems.resultOrder.checked;
-        let sortedWords = tc.sortWords(desc, false);
+        let orderBy = app.elems.resultOrder.checked;
+        let casing = app.elems.ignoreCasing.checked;
+        let sortedWords = tc.sortWords(orderBy, casing);
         app.handlers.displaySortedWords(sortedWords);
       },
       displaySortedWords(sortedWords){
-        app.elems.outputList.innerHTML = '';
-        sortedWords.forEach(word => {
+        app.elems.outputList.innerHTML = '';        
+        sortedWords.forEach((word, index) => {
+          if (index >= app.elems.resultNum.value) {
+            return
+          }
           item = document.createElement('li');
           item.textContent = `${word[0]}: ${word[1]}`;
           app.elems.outputList.appendChild(item)
