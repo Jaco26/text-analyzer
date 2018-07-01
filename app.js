@@ -50,7 +50,7 @@ const textController = ( () => {
     constructor({ elems, data, handlers }) {
       this.elems = this.setElements(elems);
       this.data = data;
-      this.handlers = handlers;
+      this.handlers = this.bindHandlersToElems(handlers);
     }
   
     setElements(elements) {
@@ -60,6 +60,16 @@ const textController = ( () => {
           return a 
       }, {});
     }
+
+    bindHandlersToElems(handlers) {
+      let handlersKeysArr = Object.keys(handlers)
+      return handlersKeysArr.reduce((a, b) => {
+        let boundFunc = handlers[b].bind(this.elems)
+        a[b] = boundFunc;
+        return a
+      }, {})
+    }
+
   }
 
   return {
@@ -87,30 +97,32 @@ const appController = ( (tc) => {
       wordsToIgnore: ['a', 'is', 'of', 'the', 'make', 'and', 'it', 'that', 'who',
         'in', 'but', 'to', 'for', 'be', 'but', 'are', 'has', 'was', 'will', 'could', 'have',
         'than', 'this', 'they', 'with', 'through', 'by', 'were', 'get'],
+      prevResults: [],
     },
     handlers: {
-      handleFormSubmit(event){
+      handleFormSubmit(event){        
         event.preventDefault();
-        let text = app.elems.textIn.value;
-        let orderBy = app.elems.resultOrder.checked;
-        let casing = app.elems.ignoreCasing.checked;
+        let text = this.textIn.value;
+        let orderBy = this.resultOrder.checked;
+        let casing = this.ignoreCasing.checked;
         let wordsToIgnore = app.data.wordsToIgnore;
         let resultObject = tc.sortWords(casing, orderBy, wordsToIgnore, text);        
         app.handlers.displaySortedWords(resultObject.sortedEntries);
+        app.data.prevResults.push(resultObject);        
       },
       displaySortedWords(sortedWords){
-        app.elems.outputList.innerHTML = '';        
+        this.outputList.innerHTML = '';        
         sortedWords.forEach((word, index) => {
-          if (index >= app.elems.resultNum.value) {
+          if (index >= this.resultNum.value) {
             return
           }
           item = document.createElement('li');
           item.textContent = `${word[0]}: ${word[1]}`;
-          app.elems.outputList.appendChild(item)
+          this.outputList.appendChild(item)
         });
       },
       handleResultNumber(event){
-        app.elems.resultNumSpan.textContent = event.target.value;
+        this.resultNumSpan.textContent = event.target.value;
       }
     }
   });
@@ -118,10 +130,7 @@ const appController = ( (tc) => {
 
   // listeners
   app.elems.form.addEventListener('submit', app.handlers.handleFormSubmit);
-  app.elems.resultNum.addEventListener('input', app.handlers.handleResultNumber);
-
-
-
+  app.elems.resultNum.addEventListener('input', app.handlers.handleResultNumber);  
 
 
 
