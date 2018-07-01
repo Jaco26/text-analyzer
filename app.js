@@ -2,37 +2,22 @@
 const textController = ( () => {
   // Define private TextAnalyzer class
   class TextAnalyzer {
-    constructor(){
-      this._text = '';
-      this._wordsToIgnore = [];
-      this.wordReI = /\b[a-z'-\d]+\b/gi;
-      this.wordReC = /\b[a-z'-\d]+\b/g;
+    constructor(casing, order, wordsToIgnore, text){
+      this.text = text;
+      this.casing = casing;
+      this.orderDescending = order;
+      this.wordsToIgnore = wordsToIgnore;
+      this.wordRe = /\b[a-z'-\d]+\b/gi;
+      this.sortedEntries = this.countAndSortWords(casing, order);
     }
 
-    set text(text) {
-      this._text = text;
-    }
-
-    set wordsToIgnore(words){
-      this._wordsToIgnore = words;
-    }
-
-    get text () {
-      return this._text;
-    }
-
-    get wordsToIgnore () {
-      return this._wordsToIgnore;
-    }
-    
     filterWordsToIgnore(ignoreCasing) {
       return ignoreCasing 
-        ? this.text.split(' ').filter(word => !this.wordsToIgnore.includes(word.toLowerCase())) 
-        : this.text.split(' ').filter(word => !this.wordsToIgnore.includes(word));
+        ? this.text.match(this.wordRe).filter(word => !this.wordsToIgnore.includes(word.toLowerCase())) 
+        : this.text.match(this.wordRe).filter(word => !this.wordsToIgnore.includes(word));
     }
 
-    countWordFrequency(ignoreCasing) {
-      const words = this.filterWordsToIgnore(ignoreCasing);
+    countWordFrequency(ignoreCasing, words) {
       return words.reduce( (a, b) => {
         ignoreCasing ? b = b.toLowerCase() : b;
         a[b] ? a[b] += 1 : a[b] = 1;
@@ -40,26 +25,25 @@ const textController = ( () => {
       }, {});
     }
 
-    sortWordsByUsage (desc, ignoreCasing) {
-      const entries = Object.entries(this.countWordFrequency(ignoreCasing));
+    sortWordsByUsage(orderDescending, countedWordObj) {
+      const entries = Object.entries(countedWordObj);
       return entries.sort( (a, b) => {
-        return desc ? b[1] - a[1] : a[1] - b[1];
+        return orderDescending ? b[1] - a[1] : a[1] - b[1];
       });
+    }
+
+    countAndSortWords (casing, order) {
+      const filteredText = this.filterWordsToIgnore(casing);
+      const countedWordObj = this.countWordFrequency(casing, filteredText); 
+      const sortedWordEntries = this.sortWordsByUsage(order, countedWordObj);      
+      return sortedWordEntries;
     }
   }
 
-  // Private class instance
-  const ta = new TextAnalyzer();
 
   // Public methods
-  const setText = (text) => ta.text = text;
-  const getText = () => ta.text;
-  const setWordsToIgnore = (words) => ta.wordsToIgnore = words;
-  const getWordsToIgnore = () => ta.wordsToIgnore;
-  const sortWords = (desc, ignoreCasing) => ta.sortWordsByUsage(desc, ignoreCasing);
-
-  const doTheThing = (text, orderBy, casing) => {
-
+  const sortWords = (text, wordsToIgnore, casing, order) => {
+    return new TextAnalyzer(text, wordsToIgnore, casing, order);
   }
 
   class App {
@@ -68,7 +52,7 @@ const textController = ( () => {
       this.data = data;
       this.handlers = handlers;
     }
-
+  
     setElements(elements) {
       let entries = Object.entries(elements);
       return entries.reduce( (a, b) => {
@@ -79,10 +63,6 @@ const textController = ( () => {
   }
 
   return {
-    setText,
-    getText,
-    setWordsToIgnore,
-    getWordsToIgnore,
     sortWords,
     App
   };
@@ -98,6 +78,7 @@ const appController = ( (tc) => {
       form: '#text-in-form',
       resultOrder: '#result-order',
       resultNum: '#number-of-results',
+      resultNumSpan: '#result-num-span',
       ignoreCasing: '#ignore-casing',
       textIn: '#text-in',
       outputList: '#output'
@@ -111,12 +92,11 @@ const appController = ( (tc) => {
       handleFormSubmit(event){
         event.preventDefault();
         let text = app.elems.textIn.value;
-        tc.setText(text);
-        tc.setWordsToIgnore(app.data.wordsToIgnore);
         let orderBy = app.elems.resultOrder.checked;
         let casing = app.elems.ignoreCasing.checked;
-        let sortedWords = tc.sortWords(orderBy, casing);
-        app.handlers.displaySortedWords(sortedWords);
+        let wordsToIgnore = app.data.wordsToIgnore;
+        let resultObject = tc.sortWords(casing, orderBy, wordsToIgnore, text);        
+        app.handlers.displaySortedWords(resultObject.sortedEntries);
       },
       displaySortedWords(sortedWords){
         app.elems.outputList.innerHTML = '';        
@@ -128,15 +108,17 @@ const appController = ( (tc) => {
           item.textContent = `${word[0]}: ${word[1]}`;
           app.elems.outputList.appendChild(item)
         });
+      },
+      handleResultNumber(event){
+        app.elems.resultNumSpan.textContent = event.target.value;
       }
     }
   });
 
-  console.log(app);
 
   // listeners
   app.elems.form.addEventListener('submit', app.handlers.handleFormSubmit);
-
+  app.elems.resultNum.addEventListener('input', app.handlers.handleResultNumber);
 
 
 
