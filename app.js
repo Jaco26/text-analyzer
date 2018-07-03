@@ -2,13 +2,13 @@
 const textController = ( () => {
   // Define private TextAnalyzer class
   class TextAnalyzer {
-    constructor(casing, order, wordsToIgnore, text){
+    constructor(ignoreCasing, order, wordsToIgnore, text){
       this.text = text;
-      this.casing = casing;
+      this.ignoreCasing = ignoreCasing;
       this.orderDescending = order;
       this.wordsToIgnore = wordsToIgnore;
       this.wordRe = /\b[a-z'-\d]+\b/gi;
-      this.sortedEntries = this.countAndSortWords(casing, order);
+      this.sortedEntries = this.countAndSortWords(ignoreCasing, order);
     }
 
     filterWordsToIgnore(ignoreCasing) {
@@ -19,7 +19,7 @@ const textController = ( () => {
 
     countWordFrequency(ignoreCasing, words) {
       return words.reduce( (a, b) => {
-        ignoreCasing ? b = b.toLowerCase() : b;
+        ignoreCasing ? b = b.toLowerCase() : b;        
         a[b] ? a[b] += 1 : a[b] = 1;
         return a;
       }, {});
@@ -40,11 +40,33 @@ const textController = ( () => {
     }
   }
 
-
   // Public methods
   const sortWords = (text, wordsToIgnore, casing, order) => {
     return new TextAnalyzer(text, wordsToIgnore, casing, order);
   }
+
+  // TODO: fix bug that results in <span> wrappers not being applied
+  // in a way consistent with ignoring casing
+  const hiliteTop = ({text, sortedEntries, ignoreCasing}, nHilight) => {    
+    const top = ignoreCasing 
+      ? sortedEntries.slice(0, nHilight).map(word => word[0].toLowerCase())
+      : sortedEntries.slice(0, nHilight).map(word => word[0]);      
+    const paras = text.match(/.+/g);
+    if (ignoreCasing) {
+      return paras.map(para => para.split(' ').map(word => {
+        return top.indexOf(word.match(/\w/gi).join('')) != -1
+          ? `<span class="hilite">${word}</span>`
+          : word;
+      }).join(' ') + '<br><br>').join(' ');
+    } else {
+      return paras.map(para => para.split(' ').map(word => {
+        return top.indexOf(word.match(/\w/g).join('')) != -1
+          ? `<span class="hilite">${word}</span>`
+          : word;
+      }).join(' ') + '<br><br>').join(' ');
+    }
+  }
+ 
 
   class App {
     constructor({ elems, data, handlers }) {
@@ -74,6 +96,7 @@ const textController = ( () => {
 
   return {
     sortWords,
+    hiliteTop,
     App
   };
 
@@ -91,7 +114,8 @@ const appController = ( (tc) => {
       resultNumSpan: '#result-num-span',
       ignoreCasing: '#ignore-casing',
       textIn: '#text-in',
-      outputList: '#output'
+      outputList: '#output',
+      outputHiLite: '#highlighted-output' 
     },
     data: {
       wordsToIgnore: ['a', 'is', 'of', 'the', 'make', 'and', 'it', 'that', 'who',
@@ -107,12 +131,13 @@ const appController = ( (tc) => {
         let casing = this.ignoreCasing.checked;
         let wordsToIgnore = app.data.wordsToIgnore;
         let resultObject = tc.sortWords(casing, orderBy, wordsToIgnore, text);        
-        app.handlers.displaySortedWords(resultObject.sortedEntries);
+        app.handlers.displaySortedWords(resultObject);
+        app.handlers.highlightTopWords(resultObject, this.resultNum.value);
         app.data.prevResults.push(resultObject);        
       },
-      displaySortedWords(sortedWords){
+      displaySortedWords ({sortedEntries}){
         this.outputList.innerHTML = '';        
-        sortedWords.forEach((word, index) => {
+        sortedEntries.forEach((word, index) => {
           if (index >= this.resultNum.value) {
             return
           }
@@ -120,6 +145,10 @@ const appController = ( (tc) => {
           item.textContent = `${word[0]}: ${word[1]}`;
           this.outputList.appendChild(item)
         });
+      },
+      highlightTopWords (resultObj, nHilight) {
+        const hilightedTop = tc.hiliteTop(resultObj, nHilight)
+        this.outputHiLite.innerHTML = hilightedTop;
       },
       handleResultNumber(event){
         this.resultNumSpan.textContent = event.target.value;
