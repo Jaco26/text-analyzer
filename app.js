@@ -52,15 +52,15 @@ const textController = ( () => {
       ? sortedEntries.slice(0, nHilight).map(word => word[0].toLowerCase())
       : sortedEntries.slice(0, nHilight).map(word => word[0]);      
     const paras = text.match(/.+/g);
-    if (ignoreCasing) {
+    if (ignoreCasing) {      
       return paras.map(para => para.split(' ').map(word => {
-        return top.indexOf(word.match(/\w/gi).join('')) != -1
+        return word.match(/\w/gi) && top.includes(word.match(/\w/gi).join(''))
           ? `<span class="hilite">${word}</span>`
           : word;
       }).join(' ') + '<br><br>').join(' ');
     } else {
       return paras.map(para => para.split(' ').map(word => {
-        return top.indexOf(word.match(/\w/g).join('')) != -1
+        return word.match(/\w/g) && top.includes(word.match(/\w/g).join(''))
           ? `<span class="hilite">${word}</span>`
           : word;
       }).join(' ') + '<br><br>').join(' ');
