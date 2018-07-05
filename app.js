@@ -1,112 +1,8 @@
+const appController = ((wordCounterMod, textHilighterMod) => { 
+  const wc = wordCounterMod;
+  const ht = textHilighterMod;
 
-const textController = ( () => {
-  // Define private TextAnalyzer class
-  class TextAnalyzer {
-    constructor(ignoreCasing, order, wordsToIgnore, text){
-      this.text = text;
-      this.ignoreCasing = ignoreCasing;
-      this.orderDescending = order;
-      this.wordsToIgnore = wordsToIgnore;
-      this.wordRe = /\b[a-z'-\d]+\b/gi;
-      this.sortedEntries = this.countAndSortWords(ignoreCasing, order);
-    }
-
-    filterWordsToIgnore(ignoreCasing) {
-      return ignoreCasing 
-        ? this.text.match(this.wordRe).filter(word => !this.wordsToIgnore.includes(word.toLowerCase())) 
-        : this.text.match(this.wordRe).filter(word => !this.wordsToIgnore.includes(word));
-    }
-
-    countWordFrequency(ignoreCasing, words) {
-      return words.reduce( (a, b) => {
-        ignoreCasing ? b = b.toLowerCase() : b;        
-        a[b] ? a[b] += 1 : a[b] = 1;
-        return a;
-      }, {});
-    }
-
-    sortWordsByUsage(orderDescending, countedWordObj) {
-      const entries = Object.entries(countedWordObj);
-      return entries.sort( (a, b) => {
-        return orderDescending ? b[1] - a[1] : a[1] - b[1];
-      });
-    }
-
-    countAndSortWords (casing, order) {
-      const filteredText = this.filterWordsToIgnore(casing);
-      const countedWordObj = this.countWordFrequency(casing, filteredText); 
-      const sortedWordEntries = this.sortWordsByUsage(order, countedWordObj);      
-      return sortedWordEntries;
-    }
-  }
-
-  // Public methods
-  const sortWords = (text, wordsToIgnore, casing, order) => {
-    return new TextAnalyzer(text, wordsToIgnore, casing, order);
-  }
-
-  // TODO: fix bug that results in <span> wrappers not being applied
-  // in a way consistent with ignoring casing
-  const hiliteTop = ({text, sortedEntries, ignoreCasing}, nHilight) => {    
-    const top = ignoreCasing 
-      ? sortedEntries.slice(0, nHilight).map(word => word[0].toLowerCase())
-      : sortedEntries.slice(0, nHilight).map(word => word[0]);      
-    const paras = text.match(/.+/g);
-    if (ignoreCasing) {      
-      return paras.map(para => para.split(' ').map(word => {
-        return word.match(/\w/gi) && top.includes(word.match(/\w/gi).join(''))
-          ? `<span class="hilite">${word}</span>`
-          : word;
-      }).join(' ') + '<br><br>').join(' ');
-    } else {
-      return paras.map(para => para.split(' ').map(word => {
-        return word.match(/\w/g) && top.includes(word.match(/\w/g).join(''))
-          ? `<span class="hilite">${word}</span>`
-          : word;
-      }).join(' ') + '<br><br>').join(' ');
-    }
-  }
- 
-
-  class App {
-    constructor({ elems, data, handlers }) {
-      this.elems = this.setElements(elems);
-      this.data = data;
-      this.handlers = this.bindHandlersToElems(handlers);
-    }
-  
-    setElements(elements) {
-      let entries = Object.entries(elements);
-      return entries.reduce( (a, b) => {
-        a[b[0]] = document.querySelector(b[1]);
-          return a 
-      }, {});
-    }
-
-    bindHandlersToElems(handlers) {
-      let handlersKeysArr = Object.keys(handlers)
-      return handlersKeysArr.reduce((a, b) => {
-        let boundFunc = handlers[b].bind(this.elems)
-        a[b] = boundFunc;
-        return a
-      }, {})
-    }
-
-  }
-
-  return {
-    sortWords,
-    hiliteTop,
-    App
-  };
-
-})();
-
-
-
-const appController = ( (tc) => { 
-
-  const app = new tc.App({
+  const app = new wc.App({
     elems: {
       form: '#text-in-form',
       resultOrder: '#result-order',
@@ -130,7 +26,7 @@ const appController = ( (tc) => {
         let orderBy = this.resultOrder.checked;
         let casing = this.ignoreCasing.checked;
         let wordsToIgnore = app.data.wordsToIgnore;
-        let resultObject = tc.sortWords(casing, orderBy, wordsToIgnore, text);        
+        let resultObject = wc.sortWords(casing, orderBy, wordsToIgnore, text);        
         app.handlers.displaySortedWords(resultObject);
         app.handlers.highlightTopWords(resultObject, this.resultNum.value);
         app.data.prevResults.push(resultObject);        
@@ -146,8 +42,8 @@ const appController = ( (tc) => {
           this.outputList.appendChild(item)
         });
       },
-      highlightTopWords (resultObj, nHilight) {
-        const hilightedTop = tc.hiliteTop(resultObj, nHilight)
+      highlightTopWords({ text, sortedEntries, ignoreCasing }, nHilight) {
+        const hilightedTop = ht.hilightedText(text, sortedEntries, ignoreCasing, nHilight)
         this.outputHiLite.innerHTML = hilightedTop;
       },
       handleResultNumber(event){
@@ -163,5 +59,5 @@ const appController = ( (tc) => {
 
 
 
-})(textController);
+})(wordCounter, textHilighter);
 
